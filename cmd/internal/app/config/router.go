@@ -27,7 +27,6 @@ func getPerson(c *gin.Context) {
 	}
 
 	c.String(http.StatusNotFound, "")
-
 }
 
 func SetupRouter() *gin.Engine {
