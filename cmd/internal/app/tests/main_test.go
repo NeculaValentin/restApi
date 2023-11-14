@@ -8,12 +8,13 @@ import (
 	"testing"
 )
 
-// TestPingRoute tests the ping route
-func TestPingRoute(t *testing.T) {
+// TestVersionRoute tests the ping route
+func TestVersionRoute(t *testing.T) {
 	router := config.SetupRouter()
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/api/v1/version", nil)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, "{\"version\":\"1.0\"}", w.Body.String())
 }
