@@ -4,11 +4,11 @@ import (
 	"github.com/go-playground/assert/v2"
 	"net/http"
 	"net/http/httptest"
-	"restApi/cmd/internal/app/config"
+	"restApi/internal/app/config"
 	"testing"
 )
 
-// TestVersionRoute tests the ping route
+// TestVersionRoute tests the version route
 func TestVersionRoute(t *testing.T) {
 	router := config.SetupRouter()
 	w := httptest.NewRecorder()

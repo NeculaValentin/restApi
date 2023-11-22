@@ -3,6 +3,7 @@ package config
 import (
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"restApi/internal/app/controller"
 )
 
 type Person struct {
@@ -30,12 +31,29 @@ func getPerson(c *gin.Context) {
 }
 
 func SetupRouter() *gin.Engine {
+	userCtrl := controller.NewUserController()
 	r := gin.Default()
-
 	v1 := r.Group("/api/v1")
 	v1.GET("/version", getVersion)
-	v1.GET("/person", getPerson)
-	v1.GET("/info/:username", getPerson)
+
+	//Auth
+	//v1.POST("/signup", signup)
+	//v1.POST("/login", login)
+
+	//Documents
+	//v1.GET("/<string:username>/<string:doc_id>", getDocument)
+	//v1.POST("/<string:username>/<string:doc_id>", postDocument)
+	//v1.PUT("/<string:username>/<string:doc_id>", putDocument)
+	//v1.DELETE("/<string:username>/<string:doc_id>", deleteDocument)
+
+	//Collections
+	//v1.GET("/<string:username>/_all_docs", getAllDocuments)
+
+	user := v1.Group("/user")
+	user.GET("", userCtrl.GetAllUserData)
+	user.POST("", userCtrl.AddUserData)
+	user.GET("/:userID", userCtrl.GetUserById)
+	user.DELETE("/:userID", userCtrl.DeleteUser)
 
 	return r
 }
