@@ -13,13 +13,6 @@ type Person struct {
 	Children []*Person `json:"children,omitempty"`
 }
 
-func getVersion(c *gin.Context) {
-	restval := map[string]string{
-		"version": "1.0",
-	}
-	c.JSON(http.StatusOK, restval)
-}
-
 func getPerson(c *gin.Context) {
 	username := c.Param("username")
 	if username == "Vale" {
@@ -32,13 +25,15 @@ func getPerson(c *gin.Context) {
 
 func SetupRouter() *gin.Engine {
 	userCtrl := controller.NewUserController()
+	authCtrl := controller.NewAuthController()
+
 	r := gin.Default()
 	v1 := r.Group("/api/v1")
-	v1.GET("/version", getVersion)
 
 	//Auth
-	//v1.POST("/signup", signup)
-	//v1.POST("/login", login)
+	//v1.POST("/signup", authCtrl.Signup)
+	//v1.POST("/login", authCtrl.Login)
+	v1.GET("/version", authCtrl.GetVersion)
 
 	//Documents
 	//v1.GET("/<string:username>/<string:doc_id>", getDocument)
