@@ -2,44 +2,45 @@ package common
 
 import (
 	"errors"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
-	"strings"
 )
 
-func PanicException_(key string, message string) {
-	err := errors.New(message)
-	err = fmt.Errorf("%s: %w", key, err)
-	if err != nil {
-		panic(err)
+type APIError struct {
+	StatusCode int
+	Err        error
+	Message    string
+}
+
+func (e *APIError) Error() string {
+	return e.Err.Error()
+}
+
+func NewAPIError(statusCode int, err error, message string) *APIError {
+	return &APIError{
+		StatusCode: statusCode,
+		Err:        err,
+		Message:    message,
 	}
 }
 
-func PanicException(responseKey ResponseStatus) {
-	PanicException_(responseKey.GetResponseStatus(), responseKey.GetResponseMessage())
-}
+func GlobalErrorHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Next() //Only inside middleware. It executes the pending handlers in the chain inside the calling handler.
 
-func PanicHandler(c *gin.Context) {
-	if err := recover(); err != nil {
-		str := fmt.Sprint(err)
-		strArr := strings.Split(str, ":")
+		// Check if there are any errors
+		if len(c.Errors) > 0 {
+			for _, e := range c.Errors {
+				// Check if it's an APIError
+				var apiErr *APIError
+				if errors.As(e.Err, &apiErr) {
+					c.JSON(apiErr.StatusCode, gin.H{"error": apiErr.Message})
+					return
+				}
+			}
 
-		key := strArr[0]
-		msg := strings.Trim(strArr[1], " ")
-
-		switch key {
-		case
-			DataNotFound.GetResponseStatus():
-			c.JSON(http.StatusBadRequest, BuildResponse_(key, msg, Null()))
-			c.Abort()
-		case
-			Unauthorized.GetResponseStatus():
-			c.JSON(http.StatusUnauthorized, BuildResponse_(key, msg, Null()))
-			c.Abort()
-		default:
-			c.JSON(http.StatusInternalServerError, BuildResponse_(key, msg, Null()))
-			c.Abort()
+			// If it's not an APIError, return a generic server error
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		}
 	}
 }

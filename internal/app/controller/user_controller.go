@@ -6,11 +6,13 @@ import (
 	"restApi/internal/app/service"
 )
 
+type UserControllerImpl struct {
+	svc service.UserService
+}
+
 func NewUserController() *UserControllerImpl {
 	userRepo := repository.NewUserRepository(repository.ConnectToDB())
-	return &UserControllerImpl{
-		svc: service.NewUserService(userRepo),
-	}
+	return &UserControllerImpl{svc: service.NewUserService(userRepo)}
 }
 
 type UserController interface {
@@ -18,10 +20,6 @@ type UserController interface {
 	AddUserData(c *gin.Context)
 	GetUserById(c *gin.Context)
 	DeleteUser(c *gin.Context)
-}
-
-type UserControllerImpl struct {
-	svc service.UserService
 }
 
 func (u UserControllerImpl) GetAllUserData(c *gin.Context) {

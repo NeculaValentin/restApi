@@ -29,7 +29,6 @@ type UserService interface {
 }
 
 func (u UserServiceImpl) GetUserById(c *gin.Context) {
-	defer common.PanicHandler(c)
 
 	log.Info("start to execute program get user by id")
 	userID, _ := strconv.Atoi(c.Param("userID"))
@@ -37,20 +36,19 @@ func (u UserServiceImpl) GetUserById(c *gin.Context) {
 	data, err := u.userRepository.FindUserById(userID)
 	if err != nil {
 		log.Error("Happened error when get data from database. Error", err)
-		common.PanicException(common.DataNotFound)
+
 	}
 
 	c.JSON(http.StatusOK, common.BuildResponse(common.Success, data))
 }
 
 func (u UserServiceImpl) AddUserData(c *gin.Context) {
-	defer common.PanicHandler(c)
 
 	log.Info("start to execute program add data user")
 	var request dao.User
 	if err := c.ShouldBindJSON(&request); err != nil {
 		log.Error("Happened error when mapping request from FE. Error", err)
-		common.PanicException(common.InvalidRequest)
+
 	}
 
 	hash, _ := bcrypt.GenerateFromPassword([]byte(request.Password), 15)
@@ -59,36 +57,33 @@ func (u UserServiceImpl) AddUserData(c *gin.Context) {
 	data, err := u.userRepository.Save(&request)
 	if err != nil {
 		log.Error("Happened error when saving data to database. Error", err)
-		common.PanicException(common.UnknownError)
+
 	}
 
 	c.JSON(http.StatusOK, common.BuildResponse(common.Success, data))
 }
 
 func (u UserServiceImpl) GetAllUser(c *gin.Context) {
-	defer common.PanicHandler(c)
 
 	log.Info("start to execute get all data user")
 
 	data, err := u.userRepository.FindAllUser()
 	if err != nil {
 		log.Error("Happened Error when find all user data. Error: ", err)
-		common.PanicException(common.UnknownError)
+
 	}
 
 	c.JSON(http.StatusOK, common.BuildResponse(common.Success, data))
 }
 
 func (u UserServiceImpl) DeleteUser(c *gin.Context) {
-	defer common.PanicHandler(c)
-
 	log.Info("start to execute delete data user by id")
 	userID, _ := strconv.Atoi(c.Param("userID"))
 
 	err := u.userRepository.DeleteUserById(userID)
 	if err != nil {
 		log.Error("Happened Error when try delete data user from DB. Error:", err)
-		common.PanicException(common.UnknownError)
+
 	}
 
 	c.JSON(http.StatusOK, common.BuildResponse(common.Success, common.Null()))

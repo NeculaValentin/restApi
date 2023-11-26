@@ -3,6 +3,7 @@ package config
 import (
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"restApi/internal/app/common"
 	"restApi/internal/app/controller"
 )
 
@@ -24,25 +25,17 @@ func getPerson(c *gin.Context) {
 }
 
 func SetupRouter() *gin.Engine {
-	userCtrl := controller.NewUserController()
-	authCtrl := controller.NewAuthController()
 
 	r := gin.Default()
+	r.Use(common.GlobalErrorHandler())
 	v1 := r.Group("/api/v1")
+	userCtrl := controller.NewUserController()
 
-	//Auth
-	//v1.POST("/signup", authCtrl.Signup)
-	//v1.POST("/login", authCtrl.Login)
-	v1.GET("/version", authCtrl.GetVersion)
+	fileCtrl := controller.NewFileController()
+	fileCtrl.RegisterRoutes(v1)
 
-	//Documents
-	//v1.GET("/<string:username>/<string:doc_id>", getDocument)
-	//v1.POST("/<string:username>/<string:doc_id>", postDocument)
-	//v1.PUT("/<string:username>/<string:doc_id>", putDocument)
-	//v1.DELETE("/<string:username>/<string:doc_id>", deleteDocument)
-
-	//Collections
-	//v1.GET("/<string:username>/_all_docs", getAllDocuments)
+	authCtrl := controller.NewAuthController()
+	authCtrl.RegisterRoutes(v1)
 
 	user := v1.Group("/user")
 	user.GET("", userCtrl.GetAllUserData)
