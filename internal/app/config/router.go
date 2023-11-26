@@ -2,6 +2,8 @@ package config
 
 import (
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"net/http"
 	"restApi/internal/app/common"
 	"restApi/internal/app/controller"
@@ -28,8 +30,10 @@ func SetupRouter() *gin.Engine {
 
 	r := gin.Default()
 	r.Use(common.GlobalErrorHandler())
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
 	v1 := r.Group("/api/v1")
-	userCtrl := controller.NewUserController()
+	//userCtrl := controller.NewUserController()
 
 	fileCtrl := controller.NewFileController()
 	fileCtrl.RegisterRoutes(v1)
@@ -37,11 +41,11 @@ func SetupRouter() *gin.Engine {
 	authCtrl := controller.NewAuthController()
 	authCtrl.RegisterRoutes(v1)
 
-	user := v1.Group("/user")
-	user.GET("", userCtrl.GetAllUserData)
-	user.POST("", userCtrl.AddUserData)
-	user.GET("/:userID", userCtrl.GetUserById)
-	user.DELETE("/:userID", userCtrl.DeleteUser)
+	//user := v1.Group("/user")
+	//user.GET("", userCtrl.GetAllUserData)
+	//user.POST("", userCtrl.AddUserData)
+	//user.GET("/:userID", userCtrl.GetUserById)
+	//user.DELETE("/:userID", userCtrl.DeleteUser)
 
 	return r
 }

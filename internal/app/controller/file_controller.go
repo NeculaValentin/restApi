@@ -34,6 +34,18 @@ func (fc *FileControllerImpl) RegisterRoutes(router *gin.RouterGroup) {
 
 }
 
+// GetFile godoc
+// @Summary Get a file
+// @Description get file by username and document ID
+// @Tags files
+// @Accept  json
+// @Produce  json
+// @Param   username path string true "Username"
+// @Param   doc_id path string true "Document ID"
+// @Success 200 {string} string "successful operation"
+// @Failure 400 {object} object "Bad request"
+// @Failure 404 {object} object "Not Found"
+// @Router /{username}/{doc_id} [get]
 func (fc *FileControllerImpl) GetFile(c *gin.Context) {
 	username := c.Param("username")
 	docID := c.Param("docID")
