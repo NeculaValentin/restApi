@@ -35,6 +35,15 @@ func (fc *FileControllerImpl) RegisterRoutes(router *gin.RouterGroup) {
 	router.GET("/:username/_all_docs", fc.GetAllUserDocs)
 }
 
+func checkParams(c *gin.Context) (string, string) {
+	username := c.Param("username")
+	docID := c.Param("doc_id")
+	if username == "" || docID == "" {
+		common.NewAPIError(c, http.StatusBadRequest, nil, "invalid input parameters")
+	}
+	return username, docID
+}
+
 // GetFile godoc
 // @Summary Get file content
 // @Description Retrieves the content of the specified document
@@ -48,9 +57,7 @@ func (fc *FileControllerImpl) RegisterRoutes(router *gin.RouterGroup) {
 // @Failure 404 {object} map[string]string
 // @Router /{username}/{doc_id} [get]
 func (fc *FileControllerImpl) GetFile(c *gin.Context) {
-	username := c.Param("username")
-	docID := c.Param("docID")
-
+	username, docID := checkParams(c)
 	content := fc.svc.GetFile(username, docID)
 	c.JSON(http.StatusOK, gin.H{"content": content})
 }
@@ -68,12 +75,10 @@ func (fc *FileControllerImpl) GetFile(c *gin.Context) {
 // @Failure 400 {object} map[string]string
 // @Router /{username}/{doc_id} [post]
 func (fc *FileControllerImpl) CreateFile(c *gin.Context) {
-	username := c.Param("username")
-	docID := c.Param("doc_id")
-
+	username, docID := checkParams(c)
 	requestBody, err := io.ReadAll(c.Request.Body)
 	if err != nil {
-		_ = common.NewAPIError(http.StatusBadRequest, err, "invalid request body")
+		common.NewAPIError(c, http.StatusBadRequest, err, "invalid request body")
 		return
 	}
 
@@ -94,12 +99,10 @@ func (fc *FileControllerImpl) CreateFile(c *gin.Context) {
 // @Failure 400 {object} map[string]string
 // @Router /{username}/{doc_id} [put]
 func (fc *FileControllerImpl) UpdateFile(c *gin.Context) {
-	username := c.Param("username")
-	docID := c.Param("doc_id")
-
+	username, docID := checkParams(c)
 	requestBody, err := io.ReadAll(c.Request.Body)
 	if err != nil {
-		_ = common.NewAPIError(http.StatusBadRequest, err, "invalid request body")
+		common.NewAPIError(c, http.StatusBadRequest, err, "invalid request body")
 		return
 	}
 
@@ -119,9 +122,12 @@ func (fc *FileControllerImpl) UpdateFile(c *gin.Context) {
 // @Failure 400 {object} map[string]string
 // @Router /{username}/{doc_id} [delete]
 func (fc *FileControllerImpl) DeleteFile(c *gin.Context) {
-	username := c.Param("username")
-	docID := c.Param("doc_id")
-	fc.svc.DeleteFile(username, docID)
+	username, docID := checkParams(c)
+	err := fc.svc.DeleteFile(username, docID)
+	if err != nil {
+		common.NewAPIError(c, http.StatusInternalServerError, err, "error deleting file")
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{})
 }
 
@@ -137,6 +143,10 @@ func (fc *FileControllerImpl) DeleteFile(c *gin.Context) {
 // @Router /{username}/_all_docs [get]
 func (fc *FileControllerImpl) GetAllUserDocs(c *gin.Context) {
 	username := c.Param("username")
+	if username == "" {
+		common.NewAPIError(c, http.StatusBadRequest, nil, "username cannot be empty")
+		return
+	}
 	docs := fc.svc.GetAllUserDocs(username)
 	c.JSON(http.StatusOK, docs)
 }

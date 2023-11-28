@@ -1,8 +1,6 @@
 package service
 
 import (
-	"net/http"
-	"restApi/internal/app/common"
 	"restApi/internal/app/repository"
 )
 
@@ -18,22 +16,16 @@ type FileService interface {
 	GetFile(username, docID string) string
 	CreateFile(username, docID string, content []byte) int
 	UpdateFile(username, docID string, content []byte) int
-	DeleteFile(username, docID string)
+	DeleteFile(username, docID string) error
 	GetAllUserDocs(username string) map[string]string
 }
 
 func (fs *FileServiceImpl) GetFile(username, docID string) string {
-	if username == "" || docID == "" {
-		_ = common.NewAPIError(http.StatusBadRequest, nil, "username or document ID cannot be empty")
-	}
 	content, _ := fs.repo.GetFile(username, docID)
 	return content
 }
 
 func (fs *FileServiceImpl) CreateFile(username, docID string, content []byte) int {
-	if username == "" || docID == "" || len(content) == 0 {
-		_ = common.NewAPIError(http.StatusBadRequest, nil, "invalid input parameters")
-	}
 	size, err := fs.repo.CreateFile(username, docID, content)
 	if err != nil {
 		// Handle specific errors (e.g., write errors, permission issues)
@@ -47,15 +39,11 @@ func (fs *FileServiceImpl) UpdateFile(username, docID string, content []byte) in
 	return size
 }
 
-func (fs *FileServiceImpl) DeleteFile(username, docID string) {
-	fs.repo.DeleteFile(username, docID)
-
+func (fs *FileServiceImpl) DeleteFile(username, docID string) error {
+	return fs.repo.DeleteFile(username, docID)
 }
 
 func (fs *FileServiceImpl) GetAllUserDocs(username string) map[string]string {
-	if username == "" {
-		_ = common.NewAPIError(http.StatusBadRequest, nil, "username cannot be empty")
-	}
 	docs, _ := fs.repo.GetAllUserDocs(username)
 	return docs
 }

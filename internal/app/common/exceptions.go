@@ -16,7 +16,7 @@ func (e *APIError) Error() string {
 	return e.Err.Error()
 }
 
-func NewAPIError(statusCode int, err error, message string) *APIError {
+func GenerateAPIError(statusCode int, err error, message string) *APIError {
 	return &APIError{
 		StatusCode: statusCode,
 		Err:        err,
@@ -43,4 +43,10 @@ func GlobalErrorHandler() gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		}
 	}
+}
+
+// NewAPIError creates an APIError and adds it to the Gin context
+func NewAPIError(c *gin.Context, statusCode int, err error, message string) {
+	apiErr := GenerateAPIError(statusCode, err, message)
+	_ = c.Error(apiErr)
 }

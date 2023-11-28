@@ -1,7 +1,6 @@
 package service
 
 import (
-	"net/http"
 	"restApi/internal/app/common"
 	"restApi/internal/app/dao"
 	"restApi/internal/app/repository"
@@ -19,7 +18,7 @@ func NewAuthService(repo repository.UserRepository) *AuthServiceImpl {
 
 type AuthService interface {
 	CreateUser(username, password string) string
-	AuthenticateUser(username, password string) string
+	AuthenticateUser(username, password string) (string, error)
 	GetVersion() map[string]string
 }
 
@@ -36,11 +35,14 @@ func (svc *AuthServiceImpl) CreateUser(username, password string) string {
 	return common.GenerateToken(username)
 }
 
-func (svc *AuthServiceImpl) AuthenticateUser(username, password string) string {
-	user := svc.ur.GetUser(username)
+func (svc *AuthServiceImpl) AuthenticateUser(username, password string) (string, error) {
+	user, userError := svc.ur.GetUser(username)
+	if userError != nil {
+		return "", userError
+	}
 	err := common.CheckPasswordHash(password, user.Password)
 	if err != nil {
-		_ = common.NewAPIError(http.StatusUnauthorized, err, "invalid credentials")
+		return "", err
 	}
-	return common.GenerateToken(username)
+	return common.GenerateToken(username), nil
 }

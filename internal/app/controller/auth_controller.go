@@ -3,7 +3,6 @@ package controller
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	log "github.com/sirupsen/logrus"
 	"net/http"
 	"restApi/internal/app/common"
 	"restApi/internal/app/dao"
@@ -42,7 +41,7 @@ func (ac *AuthControllerImpl) GetVersion(c *gin.Context) {
 func (ac *AuthControllerImpl) Signup(c *gin.Context) {
 	user, err := checkUserInput(c)
 	if err != nil {
-		_ = common.NewAPIError(http.StatusBadRequest, err, err.Error())
+		common.NewAPIError(c, http.StatusBadRequest, err, err.Error())
 		return
 	}
 	token := ac.svc.CreateUser(user.Username, user.Password)
@@ -53,10 +52,14 @@ func (ac *AuthControllerImpl) Signup(c *gin.Context) {
 func (ac *AuthControllerImpl) Login(c *gin.Context) {
 	user, err := checkUserInput(c)
 	if err != nil {
-		_ = common.NewAPIError(http.StatusBadRequest, err, err.Error())
+		common.NewAPIError(c, http.StatusBadRequest, err, err.Error())
 		return
 	}
-	token := ac.svc.AuthenticateUser(user.Username, user.Password)
+	token, err := ac.svc.AuthenticateUser(user.Username, user.Password)
+	if err != nil {
+		common.NewAPIError(c, http.StatusUnauthorized, err, "invalid credentials")
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{"access_token": token})
 }
 
@@ -64,7 +67,7 @@ func (ac *AuthControllerImpl) Login(c *gin.Context) {
 func checkUserInput(c *gin.Context) (dao.User, error) {
 	var user dao.User
 	if err := c.ShouldBindJSON(&user); err != nil {
-		log.Error("error when mapping request: ", err)
+		common.NewAPIError(c, http.StatusUnauthorized, err, "error when mapping request")
 		return user, err
 	}
 	if user.Username == "" || user.Password == "" {
