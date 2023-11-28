@@ -16,8 +16,8 @@ func NewFileService(repo repository.FileRepository) *FileServiceImpl {
 
 type FileService interface {
 	GetFile(username, docID string) string
-	CreateFile(username, docID, content string) int
-	UpdateFile(username, docID, content string) int
+	CreateFile(username, docID string, content []byte) int
+	UpdateFile(username, docID string, content []byte) int
 	DeleteFile(username, docID string)
 	GetAllUserDocs(username string) map[string]string
 }
@@ -30,8 +30,8 @@ func (fs *FileServiceImpl) GetFile(username, docID string) string {
 	return content
 }
 
-func (fs *FileServiceImpl) CreateFile(username, docID, content string) int {
-	if username == "" || docID == "" || content == "" {
+func (fs *FileServiceImpl) CreateFile(username, docID string, content []byte) int {
+	if username == "" || docID == "" || len(content) == 0 {
 		_ = common.NewAPIError(http.StatusBadRequest, nil, "invalid input parameters")
 	}
 	size, err := fs.repo.CreateFile(username, docID, content)
@@ -42,7 +42,7 @@ func (fs *FileServiceImpl) CreateFile(username, docID, content string) int {
 	return size
 }
 
-func (fs *FileServiceImpl) UpdateFile(username, docID, content string) int {
+func (fs *FileServiceImpl) UpdateFile(username, docID string, content []byte) int {
 	size, _ := fs.repo.UpdateFile(username, docID, content)
 	return size
 }

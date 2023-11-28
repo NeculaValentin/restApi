@@ -19,8 +19,8 @@ func NewFileRepository(baseDir string) *FileRepositoryImpl {
 
 type FileRepository interface {
 	GetFile(username, docID string) (string, error)
-	CreateFile(username, docID, content string) (int, error)
-	UpdateFile(username, docID, content string) (int, error)
+	CreateFile(username, docID string, content []byte) (int, error)
+	UpdateFile(username, docID string, content []byte) (int, error)
 	DeleteFile(username, docID string)
 	GetAllUserDocs(username string) (map[string]string, error)
 }
@@ -28,6 +28,10 @@ type FileRepository interface {
 // UTILS
 func (fs *FileRepositoryImpl) filePath(username, docID string) string {
 	return filepath.Join(fs.baseDir, username, docID+".json")
+}
+
+func (fs *FileRepositoryImpl) directoryPath(username string) string {
+	return filepath.Join(fs.baseDir, username)
 }
 
 func (fs *FileRepositoryImpl) ensureUserFolderExists(username string) error {
@@ -75,7 +79,7 @@ func (fs *FileRepositoryImpl) GetAllUserDocs(username string) (map[string]string
 
 //READ/WRITE
 
-func (fs *FileRepositoryImpl) CreateFile(username, docID, content string) (int, error) {
+func (fs *FileRepositoryImpl) CreateFile(username, docID string, content []byte) (int, error) {
 	if err := fs.ensureUserFolderExists(username); err != nil {
 		return 0, common.NewAPIError(http.StatusInternalServerError, err, "error creating user folder")
 	}
@@ -88,7 +92,7 @@ func (fs *FileRepositoryImpl) CreateFile(username, docID, content string) (int, 
 	return len(content), nil
 }
 
-func (fs *FileRepositoryImpl) UpdateFile(username, docID, content string) (int, error) {
+func (fs *FileRepositoryImpl) UpdateFile(username, docID string, content []byte) (int, error) {
 	size, err := fs.CreateFile(username, docID, content)
 	if err != nil {
 		return 0, common.NewAPIError(http.StatusInternalServerError, err, "error updating file")
@@ -101,5 +105,20 @@ func (fs *FileRepositoryImpl) DeleteFile(username, docID string) {
 	err := os.Remove(filePath)
 	if err != nil {
 		_ = common.NewAPIError(http.StatusInternalServerError, err, "error deleting file")
+		return
+	}
+
+	dirPath := fs.directoryPath(username) // Assuming you have a method to get the directory path
+	files, err := os.ReadDir(dirPath)
+	if err != nil {
+		_ = common.NewAPIError(http.StatusInternalServerError, err, "error reading directory")
+		return
+	}
+
+	if len(files) == 0 {
+		err = os.Remove(dirPath)
+		if err != nil {
+			_ = common.NewAPIError(http.StatusInternalServerError, err, "error deleting directory")
+		}
 	}
 }
