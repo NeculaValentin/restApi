@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"restApi/internal/app/common"
@@ -12,10 +13,13 @@ import (
 
 type FileControllerImpl struct {
 	svc service.FileService
+	as  service.AuthService
 }
 
 func NewFileController() *FileControllerImpl {
-	return &FileControllerImpl{svc: service.NewFileService(repository.NewFileRepository(""))}
+	return &FileControllerImpl{
+		as:  service.NewAuthService(repository.NewUserRepository(common.ConnectToDB())),
+		svc: service.NewFileService(repository.NewFileRepository(""))}
 }
 
 type FileController interface {
@@ -44,37 +48,35 @@ func checkParams(c *gin.Context) (string, string) {
 	return username, docID
 }
 
-// GetFile godoc
-// @Summary Get file content
-// @Description Retrieves the content of the specified document
-// @Tags files
-// @Accept  json
-// @Produce  json
-// @Param   username path string true "Username"
-// @Param   doc_id path string true "Document ID"
-// @Success 200 {object} map[string]interface{}
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Router /{username}/{doc_id} [get]
 func (fc *FileControllerImpl) GetFile(c *gin.Context) {
+	if checkAuthorization(c, fc) {
+		return
+	}
 	username, docID := checkParams(c)
 	content := fc.svc.GetFile(username, docID)
 	c.JSON(http.StatusOK, gin.H{"content": content})
 }
 
-// CreateFile godoc
-// @Summary Create a new file
-// @Description Creates a new document with the specified content
-// @Tags files
-// @Accept  json
-// @Produce  json
-// @Param   username path string true "Username"
-// @Param   doc_id path string true "Document ID"
-// @Param   doc_content body string true "Document Content"
-// @Success 200 {object} map[string]int
-// @Failure 400 {object} map[string]string
-// @Router /{username}/{doc_id} [post]
+func checkAuthorization(c *gin.Context, fc *FileControllerImpl) bool {
+	token := c.GetHeader("Authorization")
+	if token == "" {
+		common.NewAPIError(c, http.StatusUnauthorized, fmt.Errorf("authorization header is required"), "authorization required")
+		return true
+	}
+
+	// Validate token
+	_, err := fc.as.ValidateToken(token)
+	if err != nil {
+		common.NewAPIError(c, http.StatusUnauthorized, err, "invalid token")
+		return true
+	}
+	return false
+}
+
 func (fc *FileControllerImpl) CreateFile(c *gin.Context) {
+	if checkAuthorization(c, fc) {
+		return
+	}
 	username, docID := checkParams(c)
 	requestBody, err := io.ReadAll(c.Request.Body)
 	if err != nil {
@@ -86,19 +88,10 @@ func (fc *FileControllerImpl) CreateFile(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"size": size})
 }
 
-// UpdateFile godoc
-// @Summary Update file content
-// @Description Updates the content of the specified document
-// @Tags files
-// @Accept  json
-// @Produce  json
-// @Param   username path string true "Username"
-// @Param   doc_id path string true "Document ID"
-// @Param   doc_content body string true "New Document Content"
-// @Success 200 {object} map[string]int
-// @Failure 400 {object} map[string]string
-// @Router /{username}/{doc_id} [put]
 func (fc *FileControllerImpl) UpdateFile(c *gin.Context) {
+	if checkAuthorization(c, fc) {
+		return
+	}
 	username, docID := checkParams(c)
 	requestBody, err := io.ReadAll(c.Request.Body)
 	if err != nil {
@@ -110,18 +103,10 @@ func (fc *FileControllerImpl) UpdateFile(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"size": size})
 }
 
-// DeleteFile godoc
-// @Summary Delete a file
-// @Description Deletes the specified document
-// @Tags files
-// @Accept	json
-// @Produce	json
-// @Param	username path string true "Username"
-// @Param	doc_id path string true "Document ID"
-// @Success 200 {object} map[string]interface{}
-// @Failure 400 {object} map[string]string
-// @Router /{username}/{doc_id} [delete]
 func (fc *FileControllerImpl) DeleteFile(c *gin.Context) {
+	if checkAuthorization(c, fc) {
+		return
+	}
 	username, docID := checkParams(c)
 	err := fc.svc.DeleteFile(username, docID)
 	if err != nil {
@@ -131,17 +116,10 @@ func (fc *FileControllerImpl) DeleteFile(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{})
 }
 
-// GetAllUserDocs godoc
-// @Summary Get all user documents
-// @Description Retrieves all documents for the specified user
-// @Tags files
-// @Accept	json
-// @Produce	json
-// @Param	username path string true "Username"
-// @Success 200 {object} map[string]interface{}
-// @Failure 400 {object} map[string]string
-// @Router /{username}/_all_docs [get]
 func (fc *FileControllerImpl) GetAllUserDocs(c *gin.Context) {
+	if checkAuthorization(c, fc) {
+		return
+	}
 	username := c.Param("username")
 	if username == "" {
 		common.NewAPIError(c, http.StatusBadRequest, nil, "username cannot be empty")

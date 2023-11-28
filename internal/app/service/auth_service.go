@@ -1,9 +1,13 @@
 package service
 
 import (
-	"restApi/internal/app/common"
+	"errors"
+	"github.com/golang-jwt/jwt/v5"
+	"os"
+	"restApi/internal/app/auth"
 	"restApi/internal/app/dao"
 	"restApi/internal/app/repository"
+	"time"
 )
 
 type AuthServiceImpl struct {
@@ -20,6 +24,7 @@ type AuthService interface {
 	CreateUser(username, password string) string
 	AuthenticateUser(username, password string) (string, error)
 	GetVersion() map[string]string
+	ValidateToken(tokenString string) (string, error)
 }
 
 func (svc *AuthServiceImpl) GetVersion() map[string]string {
@@ -29,10 +34,10 @@ func (svc *AuthServiceImpl) GetVersion() map[string]string {
 }
 
 func (svc *AuthServiceImpl) CreateUser(username, password string) string {
-	hashedPassword := common.HashPassword(password)
+	hashedPassword := auth.HashPassword(password)
 	user := &dao.User{Username: username, Password: hashedPassword} // create a pointer
 	svc.ur.Save(user)
-	return common.GenerateToken(username)
+	return auth.GenerateToken(username)
 }
 
 func (svc *AuthServiceImpl) AuthenticateUser(username, password string) (string, error) {
@@ -40,9 +45,40 @@ func (svc *AuthServiceImpl) AuthenticateUser(username, password string) (string,
 	if userError != nil {
 		return "", userError
 	}
-	err := common.CheckPasswordHash(password, user.Password)
+	err := auth.CheckPasswordHash(password, user.Password)
 	if err != nil {
 		return "", err
 	}
-	return common.GenerateToken(username), nil
+	return auth.GenerateToken(username), nil
+}
+
+// ValidateToken checks if the provided token string is valid and returns the corresponding user.
+func (svc *AuthServiceImpl) ValidateToken(tokenString string) (string, error) {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		secret := os.Getenv("JWT_SECRET_KEY")
+		return []byte(secret), nil
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		username, ok := claims["username"].(string)
+		if !ok {
+			return "", errors.New("username not found in token")
+		}
+
+		if exp, ok := claims["exp"].(float64); ok {
+			if time.Unix(int64(exp), 0).Before(time.Now()) {
+				return "", errors.New("token expired")
+			}
+		} else {
+			return "", errors.New("exp field not found in token")
+		}
+
+		return username, nil
+	}
+
+	return "", errors.New("invalid token")
 }
