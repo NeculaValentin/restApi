@@ -17,15 +17,21 @@ func NewFileController() *FileControllerImpl {
 	return &FileControllerImpl{svc: service.NewFileService(repository.NewFileRepository(""))}
 }
 
+type FileController interface {
+	GetFile(c *gin.Context)
+	CreateFile(c *gin.Context)
+	UpdateFile(c *gin.Context)
+	DeleteFile(c *gin.Context)
+	GetAllUserDocs(c *gin.Context)
+}
+
 // RegisterRoutes registers the authentication routes
 func (fc *FileControllerImpl) RegisterRoutes(router *gin.RouterGroup) {
-
 	router.GET("/:username/:doc_id", fc.GetFile)
 	router.POST("/:username/:doc_id", fc.CreateFile)
 	router.PUT("/:username/:doc_id", fc.UpdateFile)
 	router.DELETE("/:username/:doc_id", fc.DeleteFile)
 	router.GET("/:username/_all_docs", fc.GetAllUserDocs)
-
 }
 
 // GetFile godoc

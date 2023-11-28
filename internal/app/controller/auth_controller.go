@@ -4,7 +4,9 @@ import (
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"net/http"
+	"restApi/internal/app/common"
 	"restApi/internal/app/dao"
+	"restApi/internal/app/repository"
 	"restApi/internal/app/service"
 )
 
@@ -13,9 +15,8 @@ type AuthControllerImpl struct {
 }
 
 func NewAuthController() *AuthControllerImpl {
-	return &AuthControllerImpl{
-		svc: service.NewAuthService(),
-	}
+	userRepo := repository.NewUserRepository(common.ConnectToDB())
+	return &AuthControllerImpl{svc: service.NewAuthService(userRepo)}
 }
 
 type AuthController interface {
@@ -25,28 +26,28 @@ type AuthController interface {
 }
 
 // RegisterRoutes registers the authentication routes
-func (a *AuthControllerImpl) RegisterRoutes(router *gin.RouterGroup) {
-	router.GET("/version", a.GetVersion)
-	router.POST("/signup", a.Signup)
-	router.POST("/login", a.Login)
+func (ac *AuthControllerImpl) RegisterRoutes(router *gin.RouterGroup) {
+	router.GET("/version", ac.GetVersion)
+	router.POST("/signup", ac.Signup)
+	router.POST("/login", ac.Login)
 }
 
 // GetVersion handles the /version endpoint
-func (a *AuthControllerImpl) GetVersion(c *gin.Context) {
-	c.JSON(http.StatusOK, a.svc.GetVersion())
+func (ac *AuthControllerImpl) GetVersion(c *gin.Context) {
+	c.JSON(http.StatusOK, ac.svc.GetVersion())
 }
 
 // Signup handles the /signup endpoint
-func (a *AuthControllerImpl) Signup(c *gin.Context) {
+func (ac *AuthControllerImpl) Signup(c *gin.Context) {
 	user := checkUserInput(c)
-	token := a.svc.CreateUser(user.Username, user.Password)
+	token := ac.svc.CreateUser(user.Username, user.Password)
 	c.JSON(http.StatusOK, gin.H{"access_token": token})
 }
 
 // Login handles the /login endpoint
-func (a *AuthControllerImpl) Login(c *gin.Context) {
+func (ac *AuthControllerImpl) Login(c *gin.Context) {
 	user := checkUserInput(c)
-	token := a.svc.AuthenticateUser(user.Username, user.Password)
+	token := ac.svc.AuthenticateUser(user.Username, user.Password)
 	c.JSON(http.StatusOK, gin.H{"access_token": token})
 }
 

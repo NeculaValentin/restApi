@@ -3,6 +3,8 @@ package repository
 import (
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+	"net/http"
+	"restApi/internal/app/common"
 	"restApi/internal/app/dao"
 )
 
@@ -20,17 +22,18 @@ func NewUserRepository(db *gorm.DB) *UserRepositoryImpl {
 type UserRepository interface {
 	FindAllUser() ([]dao.User, error)
 	FindUserById(id int) (dao.User, error)
-	Save(user *dao.User) (dao.User, error)
-	DeleteUserById(id int) error
+	Save(user *dao.User) dao.User
+	DeleteUserById(id int)
+	GetUser(username string) dao.User
 }
 
 type UserRepositoryImpl struct {
 	db *gorm.DB
 }
 
-func (u UserRepositoryImpl) FindAllUser() ([]dao.User, error) {
+func (ur UserRepositoryImpl) FindAllUser() ([]dao.User, error) {
 	var users []dao.User
-	result := u.db.Find(&users) // returns
+	result := ur.db.Find(&users) // returns
 	if result.Error != nil {
 		log.Error("Got an error when get all user. Error: ", result.Error)
 		return nil, result.Error
@@ -38,27 +41,28 @@ func (u UserRepositoryImpl) FindAllUser() ([]dao.User, error) {
 	return users, nil
 }
 
-func (u UserRepositoryImpl) FindUserById(id int) (dao.User, error) {
+func (ur UserRepositoryImpl) FindUserById(id int) (dao.User, error) {
 	user := dao.User{
 		ID: id,
 	}
 	return user, nil
 }
 
-func (u UserRepositoryImpl) Save(user *dao.User) (dao.User, error) {
-	err := u.db.Save(user).Error
-	if err != nil {
-		log.Error("Got an error when save user. Error: ", err)
-		return dao.User{}, err
-	}
-	return *user, nil
+func (ur UserRepositoryImpl) GetUser(username string) dao.User {
+	return dao.User{Username: username}
 }
 
-func (u UserRepositoryImpl) DeleteUserById(id int) error {
-	err := u.db.Delete(&dao.User{}, id).Error
-	if err != nil {
-		log.Error("Got an error when delete user. Error: ", err)
-		return err
+func (ur UserRepositoryImpl) Save(user *dao.User) dao.User {
+	result := ur.db.Save(user)
+	if result.Error != nil {
+		_ = common.NewAPIError(http.StatusInternalServerError, result.Error, "error when saving user")
 	}
-	return nil
+	return *user
+}
+
+func (ur UserRepositoryImpl) DeleteUserById(id int) {
+	result := ur.db.Delete(&dao.User{}, id)
+	if result.Error != nil {
+		_ = common.NewAPIError(http.StatusInternalServerError, result.Error, "error when deleting user")
+	}
 }

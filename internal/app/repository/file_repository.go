@@ -26,23 +26,24 @@ type FileRepository interface {
 }
 
 // UTILS
-func (fs *FileRepositoryImpl) filePath(username, docID string) string {
-	return filepath.Join(fs.baseDir, username, docID+".json")
+
+func (fr *FileRepositoryImpl) filePath(username, docID string) string {
+	return filepath.Join(fr.baseDir, username, docID+".json")
 }
 
-func (fs *FileRepositoryImpl) directoryPath(username string) string {
-	return filepath.Join(fs.baseDir, username)
+func (fr *FileRepositoryImpl) directoryPath(username string) string {
+	return filepath.Join(fr.baseDir, username)
 }
 
-func (fs *FileRepositoryImpl) ensureUserFolderExists(username string) error {
-	userFolderPath := filepath.Join(fs.baseDir, username)
+func (fr *FileRepositoryImpl) ensureUserFolderExists(username string) error {
+	userFolderPath := filepath.Join(fr.baseDir, username)
 	return os.MkdirAll(userFolderPath, 0755)
 }
 
 //READ ONLY
 
-func (fs *FileRepositoryImpl) GetFile(username, docID string) (string, error) {
-	filePath := fs.filePath(username, docID)
+func (fr *FileRepositoryImpl) GetFile(username, docID string) (string, error) {
+	filePath := fr.filePath(username, docID)
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -55,8 +56,8 @@ func (fs *FileRepositoryImpl) GetFile(username, docID string) (string, error) {
 	return string(content), nil
 }
 
-func (fs *FileRepositoryImpl) GetAllUserDocs(username string) (map[string]string, error) {
-	userFolderPath := filepath.Join(fs.baseDir, username)
+func (fr *FileRepositoryImpl) GetAllUserDocs(username string) (map[string]string, error) {
+	userFolderPath := filepath.Join(fr.baseDir, username)
 	files, err := os.ReadDir(userFolderPath)
 	if err != nil {
 		return nil, common.NewAPIError(http.StatusInternalServerError, err, "error reading directory")
@@ -79,12 +80,12 @@ func (fs *FileRepositoryImpl) GetAllUserDocs(username string) (map[string]string
 
 //READ/WRITE
 
-func (fs *FileRepositoryImpl) CreateFile(username, docID string, content []byte) (int, error) {
-	if err := fs.ensureUserFolderExists(username); err != nil {
+func (fr *FileRepositoryImpl) CreateFile(username, docID string, content []byte) (int, error) {
+	if err := fr.ensureUserFolderExists(username); err != nil {
 		return 0, common.NewAPIError(http.StatusInternalServerError, err, "error creating user folder")
 	}
 
-	filePath := fs.filePath(username, docID)
+	filePath := fr.filePath(username, docID)
 	err := os.WriteFile(filePath, []byte(content), 0644)
 	if err != nil {
 		return 0, common.NewAPIError(http.StatusInternalServerError, err, "error writing file")
@@ -92,23 +93,23 @@ func (fs *FileRepositoryImpl) CreateFile(username, docID string, content []byte)
 	return len(content), nil
 }
 
-func (fs *FileRepositoryImpl) UpdateFile(username, docID string, content []byte) (int, error) {
-	size, err := fs.CreateFile(username, docID, content)
+func (fr *FileRepositoryImpl) UpdateFile(username, docID string, content []byte) (int, error) {
+	size, err := fr.CreateFile(username, docID, content)
 	if err != nil {
 		return 0, common.NewAPIError(http.StatusInternalServerError, err, "error updating file")
 	}
 	return size, nil
 }
 
-func (fs *FileRepositoryImpl) DeleteFile(username, docID string) {
-	filePath := fs.filePath(username, docID)
+func (fr *FileRepositoryImpl) DeleteFile(username, docID string) {
+	filePath := fr.filePath(username, docID)
 	err := os.Remove(filePath)
 	if err != nil {
 		_ = common.NewAPIError(http.StatusInternalServerError, err, "error deleting file")
 		return
 	}
 
-	dirPath := fs.directoryPath(username) // Assuming you have a method to get the directory path
+	dirPath := fr.directoryPath(username) // Assuming you have a method to get the directory path
 	files, err := os.ReadDir(dirPath)
 	if err != nil {
 		_ = common.NewAPIError(http.StatusInternalServerError, err, "error reading directory")

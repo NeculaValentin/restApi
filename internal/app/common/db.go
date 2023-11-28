@@ -1,4 +1,4 @@
-package repository
+package common
 
 import (
 	"gorm.io/driver/postgres"

@@ -12,7 +12,6 @@ func SetupRouter() *gin.Engine {
 	r.Use(common.GlobalErrorHandler())
 
 	v1 := r.Group("/api/v1")
-	//userCtrl := controller.NewUserController()
 
 	fileCtrl := controller.NewFileController()
 	fileCtrl.RegisterRoutes(v1)
