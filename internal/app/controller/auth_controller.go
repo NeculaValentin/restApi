@@ -53,7 +53,7 @@ func (ac *AuthControllerImpl) Signup(c *gin.Context) {
 func (ac *AuthControllerImpl) Login(c *gin.Context) {
 	user, err := checkUserInput(c)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		_ = common.NewAPIError(http.StatusBadRequest, err, err.Error())
 		return
 	}
 	token := ac.svc.AuthenticateUser(user.Username, user.Password)
