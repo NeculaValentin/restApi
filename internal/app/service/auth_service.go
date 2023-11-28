@@ -1,6 +1,7 @@
 package service
 
 import (
+	"net/http"
 	"restApi/internal/app/common"
 	"restApi/internal/app/dao"
 	"restApi/internal/app/repository"
@@ -37,8 +38,9 @@ func (svc *AuthServiceImpl) CreateUser(username, password string) string {
 
 func (svc *AuthServiceImpl) AuthenticateUser(username, password string) string {
 	user := svc.ur.GetUser(username)
-	if common.CheckPasswordHash(password, user.Password) { // Implement password check
-		return common.GenerateToken(username) // Implement JWT token generation
+	err := common.CheckPasswordHash(password, user.Password)
+	if err != nil {
+		_ = common.NewAPIError(http.StatusUnauthorized, err, "invalid credentials")
 	}
-	return ""
+	return common.GenerateToken(username)
 }

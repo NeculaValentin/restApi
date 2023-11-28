@@ -3,6 +3,7 @@ package controller
 import (
 	"io"
 	"net/http"
+	"restApi/internal/app/common"
 	"restApi/internal/app/repository"
 	"restApi/internal/app/service"
 
@@ -72,7 +73,7 @@ func (fc *FileControllerImpl) CreateFile(c *gin.Context) {
 
 	requestBody, err := io.ReadAll(c.Request.Body)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		_ = common.NewAPIError(http.StatusBadRequest, err, "invalid request body")
 		return
 	}
 
@@ -98,7 +99,7 @@ func (fc *FileControllerImpl) UpdateFile(c *gin.Context) {
 
 	requestBody, err := io.ReadAll(c.Request.Body)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		_ = common.NewAPIError(http.StatusBadRequest, err, "invalid request body")
 		return
 	}
 

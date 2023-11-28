@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"net/http"
@@ -39,23 +40,35 @@ func (ac *AuthControllerImpl) GetVersion(c *gin.Context) {
 
 // Signup handles the /signup endpoint
 func (ac *AuthControllerImpl) Signup(c *gin.Context) {
-	user := checkUserInput(c)
+	user, err := checkUserInput(c)
+	if err != nil {
+		_ = common.NewAPIError(http.StatusBadRequest, err, err.Error())
+		return
+	}
 	token := ac.svc.CreateUser(user.Username, user.Password)
 	c.JSON(http.StatusOK, gin.H{"access_token": token})
 }
 
 // Login handles the /login endpoint
 func (ac *AuthControllerImpl) Login(c *gin.Context) {
-	user := checkUserInput(c)
+	user, err := checkUserInput(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 	token := ac.svc.AuthenticateUser(user.Username, user.Password)
 	c.JSON(http.StatusOK, gin.H{"access_token": token})
 }
 
 // checkUserInput checks if the user input is valid
-func checkUserInput(c *gin.Context) dao.User {
+func checkUserInput(c *gin.Context) (dao.User, error) {
 	var user dao.User
 	if err := c.ShouldBindJSON(&user); err != nil {
-		log.Error("Happened error when mapping request from FE. Error", err)
+		log.Error("error when mapping request: ", err)
+		return user, err
 	}
-	return user
+	if user.Username == "" || user.Password == "" {
+		return user, fmt.Errorf("username and password are required")
+	}
+	return user, nil
 }
