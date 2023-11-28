@@ -7,6 +7,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"os"
 	"strconv"
+	"time"
 )
 
 var JwtSecretKey = os.Getenv("JWT_SECRET_KEY") // Get the secret key from environment variable
@@ -15,7 +16,7 @@ var expiryStr, _ = strconv.Atoi(os.Getenv("JWT_EXPIRATION_MINUTES"))
 func GenerateToken(username string) string {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"username": username,
-		//"exp":      time.Now().Add(time.Minute * time.Duration(expiryStr)).Unix(), // Token expires after 5 minutes
+		"exp":      time.Now().Add(time.Minute * time.Duration(expiryStr)).Unix(), // Token expires after 5 minutes
 	})
 
 	tokenString, err := token.SignedString([]byte(JwtSecretKey))
