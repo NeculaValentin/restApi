@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"github.com/golang-jwt/jwt/v5"
 	"os"
 	"restApi/internal/app/auth"
@@ -54,15 +55,16 @@ func (svc *AuthServiceImpl) AuthenticateUser(username, password string) (string,
 
 // ValidateToken checks if the provided token string is valid and returns the corresponding user.
 func (svc *AuthServiceImpl) ValidateToken(tokenString string) (string, error) {
+	secret := os.Getenv("JWT_SECRET_KEY")
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		secret := os.Getenv("JWT_SECRET_KEY")
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
 		return []byte(secret), nil
 	})
-
 	if err != nil {
 		return "", err
 	}
-
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		username, ok := claims["username"].(string)
 		if !ok {

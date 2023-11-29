@@ -39,45 +39,26 @@ func (fc *FileControllerImpl) RegisterRoutes(router *gin.RouterGroup) {
 	router.GET("/:username/_all_docs", fc.GetAllUserDocs)
 }
 
-func checkParams(c *gin.Context) (string, string) {
-	username := c.Param("username")
-	docID := c.Param("doc_id")
-	if username == "" || docID == "" {
-		common.NewAPIError(c, http.StatusBadRequest, nil, "invalid input parameters")
-	}
-	return username, docID
-}
-
 func (fc *FileControllerImpl) GetFile(c *gin.Context) {
-	if checkAuthorization(c, fc) {
+	username, docID := checkParams(c)
+	_, err := checkAuthorization(c, fc, username)
+	if err != nil {
 		return
 	}
-	username, docID := checkParams(c)
-	content := fc.svc.GetFile(username, docID)
+	content, err := fc.svc.GetFile(username, docID)
+	if err != nil {
+		common.NewAPIError(c, http.StatusNotFound, err, "file not found")
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{"content": content})
 }
 
-func checkAuthorization(c *gin.Context, fc *FileControllerImpl) bool {
-	token := c.GetHeader("Authorization")
-	if token == "" {
-		common.NewAPIError(c, http.StatusUnauthorized, fmt.Errorf("authorization header is required"), "authorization required")
-		return true
-	}
-
-	// Validate token
-	_, err := fc.as.ValidateToken(token)
-	if err != nil {
-		common.NewAPIError(c, http.StatusUnauthorized, err, "invalid token")
-		return true
-	}
-	return false
-}
-
 func (fc *FileControllerImpl) CreateFile(c *gin.Context) {
-	if checkAuthorization(c, fc) {
+	username, docID := checkParams(c)
+	_, err := checkAuthorization(c, fc, username)
+	if err != nil {
 		return
 	}
-	username, docID := checkParams(c)
 	requestBody, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		common.NewAPIError(c, http.StatusBadRequest, err, "invalid request body")
@@ -89,10 +70,11 @@ func (fc *FileControllerImpl) CreateFile(c *gin.Context) {
 }
 
 func (fc *FileControllerImpl) UpdateFile(c *gin.Context) {
-	if checkAuthorization(c, fc) {
+	username, docID := checkParams(c)
+	_, err := checkAuthorization(c, fc, username)
+	if err != nil {
 		return
 	}
-	username, docID := checkParams(c)
 	requestBody, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		common.NewAPIError(c, http.StatusBadRequest, err, "invalid request body")
@@ -104,10 +86,11 @@ func (fc *FileControllerImpl) UpdateFile(c *gin.Context) {
 }
 
 func (fc *FileControllerImpl) DeleteFile(c *gin.Context) {
-	if checkAuthorization(c, fc) {
+	username, docID := checkParams(c)
+	_, errAuth := checkAuthorization(c, fc, username)
+	if errAuth != nil {
 		return
 	}
-	username, docID := checkParams(c)
 	err := fc.svc.DeleteFile(username, docID)
 	if err != nil {
 		common.NewAPIError(c, http.StatusInternalServerError, err, "error deleting file")
@@ -117,14 +100,49 @@ func (fc *FileControllerImpl) DeleteFile(c *gin.Context) {
 }
 
 func (fc *FileControllerImpl) GetAllUserDocs(c *gin.Context) {
-	if checkAuthorization(c, fc) {
+	username := c.Param("username")
+	_, errAuth := checkAuthorization(c, fc, username)
+	if errAuth != nil {
 		return
 	}
-	username := c.Param("username")
 	if username == "" {
 		common.NewAPIError(c, http.StatusBadRequest, nil, "username cannot be empty")
 		return
 	}
 	docs := fc.svc.GetAllUserDocs(username)
+	if docs == nil {
+		docs = make(map[string]string)
+	}
 	c.JSON(http.StatusOK, docs)
+}
+
+// checkAuthorization checks if the request is authorized
+func checkAuthorization(c *gin.Context, fc *FileControllerImpl, usernameParam string) (string, error) {
+	token := c.GetHeader("Authorization")
+	if token == "" {
+		common.NewAPIError(c, http.StatusUnauthorized, fmt.Errorf("authorization header is required"), "authorization required")
+		return "", fmt.Errorf("authorization header is required")
+	}
+
+	// Validate token
+	username, err := fc.as.ValidateToken(token)
+	if err != nil {
+		common.NewAPIError(c, http.StatusUnauthorized, err, "invalid token")
+		return "", err
+	}
+	if usernameParam != "" && usernameParam != username {
+		common.NewAPIError(c, http.StatusUnauthorized, fmt.Errorf("username in token and path do not match"), "invalid username")
+		return "", fmt.Errorf("username in token and path do not match")
+	}
+	return username, nil
+}
+
+// checkParams checks if the username and docID are valid
+func checkParams(c *gin.Context) (string, string) {
+	username := c.Param("username")
+	docID := c.Param("doc_id")
+	if username == "" || docID == "" {
+		common.NewAPIError(c, http.StatusBadRequest, nil, "invalid input parameters")
+	}
+	return username, docID
 }

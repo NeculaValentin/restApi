@@ -13,16 +13,16 @@ func NewFileService(repo repository.FileRepository) *FileServiceImpl {
 }
 
 type FileService interface {
-	GetFile(username, docID string) string
+	GetFile(username, docID string) (string, error)
 	CreateFile(username, docID string, content []byte) int
 	UpdateFile(username, docID string, content []byte) int
 	DeleteFile(username, docID string) error
 	GetAllUserDocs(username string) map[string]string
 }
 
-func (fs *FileServiceImpl) GetFile(username, docID string) string {
-	content, _ := fs.repo.GetFile(username, docID)
-	return content
+func (fs *FileServiceImpl) GetFile(username, docID string) (string, error) {
+	content, err := fs.repo.GetFile(username, docID)
+	return content, err
 }
 
 func (fs *FileServiceImpl) CreateFile(username, docID string, content []byte) int {
