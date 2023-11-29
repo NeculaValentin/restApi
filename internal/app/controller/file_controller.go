@@ -93,7 +93,7 @@ func (fc *FileControllerImpl) DeleteFile(c *gin.Context) {
 	}
 	err := fc.svc.DeleteFile(username, docID)
 	if err != nil {
-		common.NewAPIError(c, http.StatusInternalServerError, err, "error deleting file")
+		common.NewAPIError(c, http.StatusNotFound, err, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{})
@@ -127,11 +127,11 @@ func checkAuthorization(c *gin.Context, fc *FileControllerImpl, usernameParam st
 	// Validate token
 	username, err := fc.as.ValidateToken(token)
 	if err != nil {
-		common.NewAPIError(c, http.StatusUnauthorized, err, "invalid token")
+		common.NewAPIError(c, http.StatusUnauthorized, err, err.Error())
 		return "", err
 	}
 	if usernameParam != "" && usernameParam != username {
-		common.NewAPIError(c, http.StatusUnauthorized, fmt.Errorf("username in token and path do not match"), "invalid username")
+		common.NewAPIError(c, http.StatusUnauthorized, fmt.Errorf("username in token and path do not match"), "username in token and path do not match")
 		return "", fmt.Errorf("username in token and path do not match")
 	}
 	return username, nil
